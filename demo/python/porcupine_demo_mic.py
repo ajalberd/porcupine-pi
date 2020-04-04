@@ -98,7 +98,7 @@ class PorcupineDemo(Thread):
 
             pa = pyaudio.PyAudio()
             audio_stream = pa.open(
-                rate=porcupine.sample_rate,
+                rate=16000,
                 channels=1,
                 format=pyaudio.paInt16,
                 input=True,
@@ -106,7 +106,7 @@ class PorcupineDemo(Thread):
                 input_device_index=self._input_device_index)
 
             while True:
-                pcm = audio_stream.read(porcupine.frame_length)
+                pcm = audio_stream.read(porcupine.frame_length, exception_on_overflow = False)
                 pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
 
                 if self._output_path is not None:

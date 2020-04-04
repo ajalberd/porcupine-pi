@@ -1,0 +1,9 @@
+pcm.!default {     
+  capture.pcm "usb_mic"
+}
+pcm.usb_mic {
+  type plug
+  slave {
+    pcm "hw:1,0"
+  }
+}
