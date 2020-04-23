@@ -20,6 +20,10 @@ import numpy as np
 import pyaudio
 import soundfile
 
+from multiprocessing.connection import Client
+address = ('127.0.0.1', 6000)
+conn = Client(address)
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../binding/python'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../resources/util/python'))
 
@@ -117,6 +121,7 @@ class PorcupineDemo(Thread):
                     print('[%s] detected keyword' % str(datetime.now()))
                 elif num_keywords > 1 and result >= 0:
                     print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
+                    conn.send(keyword_names[result]) #send the keyword to another process.
 
         except KeyboardInterrupt:
             print('stopping ...')
