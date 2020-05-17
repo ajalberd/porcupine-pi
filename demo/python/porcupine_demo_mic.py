@@ -20,16 +20,13 @@ import numpy as np
 import pyaudio
 import soundfile
 
-from multiprocessing.connection import Client
-address = ('127.0.0.1', 6000)
-conn = Client(address)
+sys.path.append(os.path.join(
+    os.path.dirname(__file__), '../../binding/python'))
+sys.path.append(os.path.join(os.path.dirname(
+    __file__), '../../resources/util/python'))
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../binding/python'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../resources/util/python'))
-
-from porcupine import Porcupine
 from util import *
-
+from porcupine import Porcupine
 
 class PorcupineDemo(Thread):
     """
@@ -44,9 +41,8 @@ class PorcupineDemo(Thread):
             model_file_path,
             keyword_file_paths,
             sensitivities,
-            input_device_index=None,
+            input_device_index=3,
             output_path=None):
-
         """
         Constructor.
 
@@ -84,11 +80,12 @@ class PorcupineDemo(Thread):
 
         keyword_names = list()
         for x in self._keyword_file_paths:
-            keyword_names.append(os.path.basename(x).replace('.ppn', '').replace('_compressed', '').split('_')[0])
+            keyword_names.append(os.path.basename(x).replace(
+                '.ppn', '').replace('_compressed', '').split('_')[0])
 
-        print('listening for:')
-        for keyword_name, sensitivity in zip(keyword_names, self._sensitivities):
-            print('- %s (sensitivity: %.2f)' % (keyword_name, sensitivity))
+        #print('listening for:')
+        # for keyword_name, sensitivity in zip(keyword_names, self._sensitivities):
+            #print('- %s (sensitivity: %.2f)' % (keyword_name, sensitivity))
 
         porcupine = None
         pa = None
@@ -110,18 +107,21 @@ class PorcupineDemo(Thread):
                 input_device_index=self._input_device_index)
 
             while True:
-                pcm = audio_stream.read(porcupine.frame_length, exception_on_overflow = False)
+                pcm = audio_stream.read(
+                    porcupine.frame_length, exception_on_overflow=False)
                 pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
 
                 if self._output_path is not None:
                     self._recorded_frames.append(pcm)
-
                 result = porcupine.process(pcm)
-                if num_keywords == 1 and result:
-                    print('[%s] detected keyword' % str(datetime.now()))
-                elif num_keywords > 1 and result >= 0:
-                    print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
-                    conn.send(keyword_names[result]) #send the keyword to another process.
+                # if num_keywords == 1 and result:
+                #print('[%s] detected keyword' % str(datetime.now()))
+                if num_keywords > 1 and result >= 0:
+                    #print('[%s] detected %s' % (str(datetime.now()), keyword_names[result]))
+                    # conn.send(keyword_names[result]) #send the keyword to another process.
+                    # this should be indented under the elif normally
+                    print(keyword_names[result])
+                    sys.stdout.flush()
 
         except KeyboardInterrupt:
             print('stopping ...')
@@ -136,10 +136,13 @@ class PorcupineDemo(Thread):
                 pa.terminate()
 
             if self._output_path is not None and len(self._recorded_frames) > 0:
-                recorded_audio = np.concatenate(self._recorded_frames, axis=0).astype(np.int16)
-                soundfile.write(self._output_path, recorded_audio, samplerate=porcupine.sample_rate, subtype='PCM_16')
+                recorded_audio = np.concatenate(
+                    self._recorded_frames, axis=0).astype(np.int16)
+                soundfile.write(self._output_path, recorded_audio,
+                                samplerate=porcupine.sample_rate, subtype='PCM_16')
 
-    _AUDIO_DEVICE_INFO_KEYS = ['index', 'name', 'defaultSampleRate', 'maxInputChannels']
+    _AUDIO_DEVICE_INFO_KEYS = ['index', 'name',
+                               'defaultSampleRate', 'maxInputChannels']
 
     @classmethod
     def show_audio_devices_info(cls):
@@ -149,7 +152,7 @@ class PorcupineDemo(Thread):
 
         for i in range(pa.get_device_count()):
             info = pa.get_device_info_by_index(i)
-            print(', '.join("'%s': '%s'" % (k, str(info[k])) for k in cls._AUDIO_DEVICE_INFO_KEYS))
+            #print(', '.join("'%s': '%s'" % (k, str(info[k])) for k in cls._AUDIO_DEVICE_INFO_KEYS))
 
         pa.terminate()
 
@@ -157,17 +160,23 @@ class PorcupineDemo(Thread):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--keywords', help='comma-separated list of default keywords (%s)' % ', '.join(KEYWORDS))
+    parser.add_argument(
+        '--keywords', help='comma-separated list of default keywords (%s)' % ', '.join(KEYWORDS))
 
-    parser.add_argument('--keyword_file_paths', help='comma-separated absolute paths to keyword files')
+    parser.add_argument('--keyword_file_paths',
+                        help='comma-separated absolute paths to keyword files')
 
-    parser.add_argument('--library_path', help="absolute path to Porcupine's dynamic library", default=LIBRARY_PATH)
+    parser.add_argument(
+        '--library_path', help="absolute path to Porcupine's dynamic library", default=LIBRARY_PATH)
 
-    parser.add_argument('--model_file_path', help='absolute path to model parameter file', default=MODEL_FILE_PATH)
+    parser.add_argument(
+        '--model_file_path', help='absolute path to model parameter file', default=MODEL_FILE_PATH)
 
-    parser.add_argument('--sensitivities', help='detection sensitivity [0, 1]', default=0.5)
+    parser.add_argument('--sensitivities',
+                        help='detection sensitivity [0, 1]', default=0.5)
 
-    parser.add_argument('--input_audio_device_index', help='index of input audio device', type=int, default=None)
+    parser.add_argument('--input_audio_device_index',
+                        help='index of input audio device', type=int, default=None)
 
     parser.add_argument(
         '--output_path',
@@ -182,7 +191,8 @@ def main():
     else:
         if args.keyword_file_paths is None:
             if args.keywords is None:
-                raise ValueError('either --keywords or --keyword_file_paths must be set')
+                raise ValueError(
+                    'either --keywords or --keyword_file_paths must be set')
 
             keywords = [x.strip() for x in args.keywords.split(',')]
 
@@ -192,7 +202,8 @@ def main():
                 raise ValueError(
                     'selected keywords are not available by default. available keywords are: %s' % ', '.join(KEYWORDS))
         else:
-            keyword_file_paths = [x.strip() for x in args.keyword_file_paths.split(',')]
+            keyword_file_paths = [x.strip()
+                                  for x in args.keyword_file_paths.split(',')]
 
         if isinstance(args.sensitivities, float):
             sensitivities = [args.sensitivities] * len(keyword_file_paths)
